@@ -1,0 +1,88 @@
+### Template for R-script
+###
+### If this script is placed in the /scripts directory in the main Pirana
+### folder, the script is automatically available from the Pirana menu ("scripts")
+###
+### Arguments that are automatically supplied by Pirana to this script are:
+
+if(Sys.getenv("R_LIB") != "") { .libPaths(c(Sys.getenv("R_LIB"), .libPaths())) }
+
+library(xpose4)
+
+models <- list ( 
+  "vpc_run30" = list ( 
+    modelfile       = "vpc_run30.mod",
+    description     = "",
+    reference_model = "",
+    working_dir     = "C:/Users/JYL/Desktop/Everolimus/HNY",
+    data_file       = "",  
+    output_file     = "vpc_run30.lst",
+    tables          = c(""),
+    estim           = list(
+      th          = c(),
+      th_se       = c(),
+      om          = NULL,
+      om_se       = NULL,
+      om_block    = NULL,
+      om_se_block = NULL,
+      si          = NULL,
+      si_se       = NULL,
+      si_block    = NULL,
+      si_se_block = NULL
+    )
+  )
+)
+run_from <- list(software = "pirana", version = "3.0.0")
+open_res <- 1
+
+setwd('C:/Users/JYL/Desktop/Everolimus/HNY')
+folder <-  "vpc_run30" 
+
+# get the run name from the command.txt
+cmd <- strsplit (tail(readLines(paste(folder, "/command.txt", sep="")),1), "\\s")[[1]][-1]
+for (i in seq(cmd)) {
+    if (substr(cmd[i],1,1) != "-") {
+        mod <- cmd[i]
+    }
+}
+mod <- strsplit(mod, "\\.")[[1]][1]
+
+fname <- paste("pirana_reports/",mod,"_vpc_",folder,"_s1.pdf", sep="")
+if (!file.exists("pirana_reports")) {dir.create ("pirana_reports")}
+if (file.exists (fname, sep="")){
+    file.remove (fname, sep="")
+}
+
+csv_file <- dir(folder, pattern="raw_result")[1]
+vpc.info <- paste(folder,"/vpc_results.csv", sep="")
+vpctab <- paste(folder, "/", dir(folder, pattern = "^vpctab")[1], sep="")
+
+pl <- xpose.VPC(vpc.info=vpc.info,
+                vpctab = vpctab,
+                type="p",logy=F,
+                PI.ci="area",
+                PI.ci.med.arcol=rgb(0.1,0.1,0.1,1),
+                PI.ci.med.lty="dotted",
+                PI.ci.up.arcol=rgb(0.6,0.6,.6,1),
+                PI.ci.down.arcol=rgb(0.6,0.6,.6,1),
+                PI='a', PI.real='lines',
+                PI.real.up.col='grey51',
+                PI.real.down.col='grey51',
+                PI.real.med.col='black',
+                PI.limits=c(0.1,0.9),
+                max.plots.per.page=1
+                )
+
+print (pl)
+
+dev.off()
+    # open created file
+    cat (paste("OUTPUT: ", fname, sep=""))
+    if (file.exists(fname) && open_res) {
+        if (Sys.info()['sysname'] == 'Windows') { shell.exec(paste(getwd(),"/",fname,sep="")) }  # windows
+	else if (Sys.info()['sysname'] == 'Darwin') { system(paste ("open ",fname, sep="")) } # mac
+    else { system(paste("xdg-open ", fname, sep=""), ignore.stdout=TRUE, ignore.stderr=TRUE, wait=FALSE) } # linux
+    }
+
+
+
